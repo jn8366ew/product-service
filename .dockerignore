@@ -1,0 +1,44 @@
+# 이미지 빌드에 필요한 것: gradlew, gradle/, build.gradle, settings.gradle, src/
+# 그 외는 빌드 컨텍스트에서 제외해 전송량을 줄이고 민감 파일 유출을 막는다.
+
+### Git ###
+.git/
+.gitignore
+.gitattributes
+
+### Gradle 빌드 산출물 (컨테이너 안에서 새로 빌드) ###
+.gradle/
+build/
+out/
+bin/
+
+### IDE / 에디터 ###
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.cursor/
+.history/
+.project
+.classpath
+.settings/
+.factorypath
+
+### OS ###
+**/.DS_Store
+**/Thumbs.db
+**/Desktop.ini
+
+### 민감 정보 ###
+.env
+.env.*
+
+### CI / Docker 설정 (이미지 내용과 무관) ###
+Dockerfile
+.dockerignore
+Jenkinsfile
+
+### 로그 / 문서 ###
+**/*.log
+*.md
