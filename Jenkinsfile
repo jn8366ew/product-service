@@ -8,7 +8,7 @@ pipeline {
   agent any
 
   parameters {
-    choice(name: 'TARGET_ENV', choices: ['dev', 'staging', 'production'], description: '배포할 환경을 선택하세요')
+    choice(name: 'TARGET_ENV', choices: ['dev', 'staging', 'production', 'hotfix'], description: '배포할 환경을 선택하세요')
   }
 
   environment {
@@ -47,7 +47,7 @@ pipeline {
     // Section 4: production 뿐 아니라 staging도 사람이 한번 확인하도록 승인 게이트를 둡니다.
     stage('Approval') {
       when {
-        expression { params.TARGET_ENV != 'dev' }
+        expression { params.TARGET_ENV == 'staging' }
       }
       steps {
         timeout(time: 15, unit: 'MINUTES') {
@@ -104,10 +104,10 @@ pipeline {
   }
 
   post {
-    success {
-      slackSend(channel: '#deploy', color: 'good',
-        message: "✅ ${params.TARGET_ENV} 배포 파이프라인 성공 — ${env.IMAGE_NAME}:${env.IMAGE_TAG}")
-    }
+     success {
+       slackSend(channel: '#deploy', color: 'good',
+         message: "${params.TARGET_ENV == 'hotfix' ? '🚨 HOTFIX ' : ''}✅ ${params.TARGET_ENV} 배포 파이프라인 성공 — ${env.IMAGE_NAME}:${env.IMAGE_TAG}")
+      }
     failure {
       slackSend(channel: '#deploy', color: 'danger',
         message: "❌ ${params.TARGET_ENV} 배포 파이프라인 실패 — 빌드 번호 ${env.BUILD_NUMBER}")
