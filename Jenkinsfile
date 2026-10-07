@@ -46,9 +46,9 @@ pipeline {
 
     // Section 4: production 뿐 아니라 staging도 사람이 한번 확인하도록 승인 게이트를 둡니다.
     stage('Approval') {
-      when {
-        expression { params.TARGET_ENV == 'staging' }
-      }
+       when {
+         expression { ['staging', 'production'].contains(params.TARGET_ENV) }
+       }
       steps {
         timeout(time: 15, unit: 'MINUTES') {
           input message: "${params.TARGET_ENV} 배포를 승인하시겠습니까?",
@@ -61,7 +61,7 @@ pipeline {
     // 매니페스트는 product-service-manifests 저장소에 있으므로 여기서 함께 체크아웃합니다.
     stage('Deploy (dev/staging - Push)') {
       when {
-        expression { params.TARGET_ENV != 'production' }
+        expression { ['dev', 'staging'].contains(params.TARGET_ENV) }
       }
       steps {
         withCredentials([
