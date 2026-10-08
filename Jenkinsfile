@@ -91,7 +91,7 @@ pipeline {
           sh '''
             rm -rf gitops
             git clone https://${GIT_USER}:${GIT_TOKEN}@${MANIFESTS_REPO} gitops
-            cd gitops/overlays/production
+            cd gitops/overlays/prod
             kustomize edit set image $IMAGE_NAME=$IMAGE_NAME:$IMAGE_TAG
             git config user.email "jenkins@ci.local"
             git config user.name "jenkins-ci"
