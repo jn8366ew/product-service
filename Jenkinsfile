@@ -32,11 +32,11 @@ pipeline {
       }
     }
 
-//     stage('Test') {
-//       steps {
-//         sh './gradlew test --no-daemon'
-//       }
-//     }
+    // stage('Test') {
+    //   steps {
+    //     sh './gradlew test --no-daemon'
+    //   }
+    // }
 
     stage('Docker Build') {
       steps {
@@ -46,9 +46,9 @@ pipeline {
 
     // Section 4: production 뿐 아니라 staging도 사람이 한번 확인하도록 승인 게이트를 둡니다.
     stage('Approval') {
-       when {
-         expression { ['staging', 'production'].contains(params.TARGET_ENV) }
-       }
+      when {
+        expression { ['staging', 'production'].contains(params.TARGET_ENV) }
+      }
       steps {
         timeout(time: 15, unit: 'MINUTES') {
           input message: "${params.TARGET_ENV} 배포를 승인하시겠습니까?",
@@ -98,19 +98,43 @@ pipeline {
             git commit -am "deploy: $IMAGE_NAME:$IMAGE_TAG"
             git push origin main
           '''
+          script {
+            env.GITOPS_COMMIT = sh(
+              script: 'cd gitops && git rev-parse HEAD',
+              returnStdout: true
+            ).trim()
+          }
         }
       }
     }
   }
 
   post {
-     success {
-       slackSend(channel: '#deploy', color: 'good',
-         message: "${params.TARGET_ENV == 'hotfix' ? '🚨 HOTFIX ' : ''}✅ ${params.TARGET_ENV} 배포 파이프라인 성공 — ${env.IMAGE_NAME}:${env.IMAGE_TAG}")
+    success {
+      script {
+        if (params.TARGET_ENV == 'production') {
+          slackSend(channel: '#deploy', color: 'good',
+            message: "🚀 production 매니페스트 커밋 완료\n" +
+                     "이미지: ${env.IMAGE_NAME}:${env.IMAGE_TAG}\n" +
+                     "커밋: ${env.GITOPS_COMMIT}\n" +
+                     "ArgoCD 동기화 대기 중 — <${env.BUILD_URL}|빌드 로그>")
+        } else {
+          slackSend(channel: '#deploy', color: 'good',
+            message: "${params.TARGET_ENV == 'hotfix' ? '🚨 HOTFIX ' : ''}✅ ${params.TARGET_ENV} 배포 파이프라인 성공 — ${env.IMAGE_NAME}:${env.IMAGE_TAG}")
+        }
       }
+    }
     failure {
-      slackSend(channel: '#deploy', color: 'danger',
-        message: "❌ ${params.TARGET_ENV} 배포 파이프라인 실패 — 빌드 번호 ${env.BUILD_NUMBER}")
+      script {
+        if (params.TARGET_ENV == 'production') {
+          slackSend(channel: '#deploy', color: 'danger',
+            message: "❌ production 매니페스트 커밋 실패 — 빌드 ${env.BUILD_NUMBER}\n" +
+                     "<${env.BUILD_URL}console|콘솔 확인>")
+        } else {
+          slackSend(channel: '#deploy', color: 'danger',
+            message: "❌ ${params.TARGET_ENV} 배포 파이프라인 실패 — 빌드 번호 ${env.BUILD_NUMBER}")
+        }
+      }
     }
   }
 }
